@@ -1,0 +1,9 @@
+*.txt
+*.csv
+*.json
+*.parquet
+*.vtt
+__pycache__/
+.ipynb_checkpoints/
+.env
+praw.ini
