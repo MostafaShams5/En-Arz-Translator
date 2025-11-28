@@ -1,143 +1,69 @@
-Here is the complete **README.md** file in Markdown format. You can copy the code block below and paste it directly into your GitHub repository.
-
-```markdown
-# English to Egyptian Arabic Translator (En-Arz)
-
-This project contains the full source code for training a Transformer model to translate English into Egyptian Arabic (Masri).
-
-Most translation models output Modern Standard Arabic (MSA). I built this model from scratch to handle the actual spoken dialect used in Egypt, specifically focusing on subtitles, movies, TV shows, and casual conversation.
-
-**Dataset Size:** Approximately 40 Million rows (Scraped & Curated).
-**Architecture:** Custom Encoder-Decoder (BART-based) with RMSNorm.
-
-**Links:**
-*   **Hugging Face Model:** [Shams03/En-Arz](https://huggingface.co/Shams03/En-Arz)
-*   **Try it Live:** [Hugging Face Space](https://huggingface.co/spaces/Shams03/EnglishToArz)
-
----
-
-## How to Use the Model (Python Wrapper)
-
-Because my tokenizer splits Arabic prefixes (like "Al-" or "Bi-") to help the model learn better, the raw output will have spaces where they shouldn't be. You need to use this wrapper code to glue the text back together.
-
-```python
-import torch
+End-to-End English ↔ Egyptian Arabic (ARZ) TransformerThis repository contains the complete pipeline for building a bilingual Encoder-Decoder model designed specifically for translating English to the Egyptian Arabic dialect (Masri). Unlike standard models trained on Modern Standard Arabic (MSA), this project engineers the entire stack—from data collection and cleaning to the neural architecture itself—to handle code-switching, slang, and dialectal morphology.Model PerformanceDespite the low-resource nature of the dialect, the model achieves strong results on held-out test sets.MetricScoreNoteBLEU Score28.5High result for a dialectal taskValidation Loss2.18Stable convergenceTraining Loss2.33Resources:Model Weights: Hugging Face: Shams03/En-ArzLive Demo: Hugging Face SpacesTraining Logs: Kaggle NotebookKey Engineering AchievementsThis project required solving significant engineering challenges regarding stability, data scarcity, and linguistic complexity.1. Architectural Stability (RMSNorm Fix)During the pre-training phase, the standard Transformer LayerNorm caused gradient instability when training with FP16 precision, leading to loss divergence.Solution: I implemented a custom script to physically replace all LayerNorm layers with RMSNorm (Root Mean Square Normalization) within the initialized model architecture. This modification successfully stabilized the gradients on NVIDIA T4 hardware.2. ETL Data PipelineTo address data scarcity, I engineered a pipeline to collect approximately 3GB of high-quality dialectal data.Social Media Mining: Developed a multi-threaded scraper for the Reddit API to bypass rate limits. This targeted 26 specific Egyptian subreddits (e.g., r/Egypt, r/Cairo, r/Alexandria), collecting over 250,000 posts and comments into a local SQLite3 database.Audio Transcription: Processed over 1,700 hours of YouTube videos to extract VTT subtitles. This allowed me to capture pure spoken dialect, which often differs significantly from written text.Synthetic Alignment: Leveraged Large Language Models (LLMs) to generate synthetic translations for difficult domains like rap lyrics and slang dictionaries.3. Linguistic Pre-processingArabic morphology poses challenges for standard tokenizers due to clitics (prefixes attached to words). I applied rigorous rule-based transformations:Morphological Stripping: I implemented pre-tokenization rules to separate sticky prefixes (e.g., "wa-", "bi-", "al-") from root words before training.Dialect Standardization: Created a mapping dictionary of over 2,000 entries to normalize spelling and convert Standard Arabic to Egyptian.CategorySource TermEgyptian Target (ARZ)NotesTranslationلماذا (Limatha)ليه (Leh)"Why" - MSA vs DialectTranslationكيف (Kayfa)إزاي (Ezzay)"How" - MSA vs DialectGrammarسوف (Sawfa)هـ (Ha- prefix)Future tense markerVocabularyأريد (Oreed)عايز (Ayez)"I want"Typo Fixعايذ (Ayeth)عايز (Ayez)Correcting common Z/Th spelling errorsProject Structure1. ScrapersScripts responsible for collecting raw data from various platforms.ScrapeRedditData.py: Connects to the Reddit API using multi-threading to scrape posts and comments from targeted Egyptian subreddits. Uses SQLite for deduplication.ScrapeYoutubeSubtitles.py: A wrapper around yt-dlp that downloads and cleans subtitles from YouTube playlists, stripping timestamps and HTML to extract raw VTT text.StreamTwitterData.py: Streams massive datasets row-by-row to filter and save content without loading the entire file into memory.DownloadHuggingFaceDatasets.py: Downloads large English datasets (C4, FineWeb) with strict file size limits to prevent memory interactions.DownloadDatasetSubsets.py: Target specific domains (e.g., lyrics, toxic comments) to improve model stylistic coverage.2. ProcessorsThe cleaning and transformation pipeline.ProcessArabicTextPipeline.py: Main linguistic processor. Handles spelling correction, number normalization, and junk phrase filtering.FilterHighJunkRatio.py: In-place filter that removes lines containing a high percentage of non-text symbols or corrupt characters.CleanHtmlEntities.py: Decodes HTML entities and splits bilingual text lines into separate lists.NormalizeSeparators.py: Standardizes various dataset delimiters into a unified format.FilterTextNoise.py: Removes sentences with excessive emojis, spam repetition, or mostly numeric content.AlignAndFilterCorpus.py: Calculates length ratios between source and target sentences to remove bad alignments (e.g., removing pairs where English length > 3x Arabic length).DeepTextCleaning.py: Removes subtitle artifacts (e.g., "[music]") and downsamples frequent duplicates to prevent overfitting.CombineProcessedFiles.py: Merges cleaned files, removes exact duplicates, and sorts the final corpus.SplitArrowToTxt.py: Converts binary Arrow/Parquet files into standard text files.ApplyRuleBasedPretokenization.py: Applies linguistic splitting rules (e.g., splitting "وال" to "و ال") before tokenizer training.3. AnalyticsTools for analyzing dataset health.GenerateAdvancedCorpusStats.py: Generates comprehensive reports on vocabulary size, sentence length distribution, and quality metrics.GenerateBasicCorpusStats.py: Provides quick counts of unique pairs, duplicates, and empty lines.4. TrainingThe core machine learning workflows.Step1_PretokenizeRawData.ipynb: Pre-processes text by splitting Arabic prefixes and English contractions.Step2_TrainBpeTokenizerFromScratch.ipynb: Trains a custom BPE tokenizer with a 90,000 token vocabulary.Step3_PretrainBartModelFromScratch.ipynb: Initializes the BART architecture from scratch, applies the RMSNorm fix, and executes pre-training with weighted sampling.Step4_FinetuneTranslationModel.ipynb: Fine-tunes the model specifically on the English to Arabic translation task, including manual fixes for embedding weight tying.BpeTrainingLogic.py: Helper functions for the tokenizer training process.5. UtilitiesMaintenance scripts for file handling.ChunkTextFile.py: Splits large text streams into chunks of 350 words.SplitFileIntoQuarters.py: Shards multi-gigabyte files into smaller segments.RenumberTextLines.py & FixAndRenumberLines.py: Corrects malformed line numbering sequences.DebugCorpusParsing.py: Inspects files to identify lines causing parser failures.Model ArchitectureThe model uses a BART-style Encoder-Decoder architecture built from scratch.Parameters: ~98.4 MillionLayers: 8 Encoder / 8 DecoderHidden Dimension: 384Feed-Forward Dimension: 1152Attention Heads: 12Tokenizer: Custom BPE (90k vocabulary)Data Strategy: Weighted sampling to prioritize high-quality transcripts over web-scraped data.UsageTo use the model in Python, you must handle two things:Architecture Patching: You must replace LayerNorm with RMSNorm after loading the model structure, as the model was trained with this custom modification.Post-Processing: You must re-attach Arabic prefixes (clitics) that were split during tokenization.import torch
+import torch.nn as nn
 import re
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
-# 1. Formatting Function
+# --- 1. Architecture Patch (RMSNorm) ---
+class RMSNorm(nn.Module):
+    def __init__(self, dim: int, eps: float = 1e-6):
+        super().__init__()
+        self.dim = dim
+        self.eps = eps
+        self.scale = nn.Parameter(torch.ones(dim))
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        rms = torch.sqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
+        return x / rms * self.scale
+
+def replace_layernorm_with_rmsnorm(module: nn.Module):
+    """
+    Recursively replaces all LayerNorm layers with RMSNorm.
+    Essential for matching the trained model's architecture.
+    """
+    for name, child in list(module.named_children()):
+        if isinstance(child, nn.LayerNorm):
+            dim = child.normalized_shape[0] if isinstance(child.normalized_shape, (tuple, list)) else child.normalized_shape
+            rms = RMSNorm(dim=dim, eps=1e-6)
+            # Transfer weights from the loaded LayerNorm to the new RMSNorm
+            if hasattr(child, 'weight'): 
+                rms.scale = child.weight
+            setattr(module, name, rms)
+        else:
+            replace_layernorm_with_rmsnorm(child)
+
+# --- 2. Post-Processing Function ---
 def fix_arabic_output(text):
     if not text: return text
-    # Glue Prefixes (connect 'Al-', 'Wa-', etc. to the next word)
+    # Glue Prefixes: Re-attaches 'al', 'wa', 'bi' etc.
     text = re.sub(r'(^|\s)(ال|لل|وال|بال)\s+(?=\S)', r'\1\2', text)
-    # Glue Punctuation (connect dots and commas to the previous word)
+    # Glue Punctuation
     text = re.sub(r'\s+([،؟!.,])', r'\1', text)
     return text.strip()
 
-# 2. Load Model
+# --- 3. Load & Patch Model ---
 model_id = "Shams03/En-Arz"
 tokenizer = AutoTokenizer.from_pretrained(model_id)
-
-# Note: If you are loading the raw weights manually using a script, 
-# you must apply the RMSNorm patch (explained in the Training section below).
 model = AutoModelForSeq2SeqLM.from_pretrained(model_id)
 
-# 3. Translate
+# Apply the RMSNorm fix
+replace_layernorm_with_rmsnorm(model)
+
+# --- 4. Translate Function ---
 def translate(text):
     inputs = tokenizer(text, return_tensors="pt")
     if "token_type_ids" in inputs: del inputs["token_type_ids"]
     
-    # Generate
-    # Assuming 'model' is loaded
-    out = model.generate(**inputs, max_new_tokens=128)
-    raw = tokenizer.decode(out[0], skip_special_tokens=True)
+    # Generate with Beam Search
+    outputs = model.generate(
+        **inputs, 
+        max_new_tokens=128,
+        num_beams=5,
+        repetition_penalty=1.5
+    )
     
-    return fix_arabic_output(raw)
+    raw_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return fix_arabic_output(raw_output)
 
-print(translate("I have a bad feeling about this."))
-# Output: عندي إحساس وحش أوي بخصوص الموضوع ده
-```
-
----
-
-## Project Structure
-
-I organized the project into five main folders. Here is a detailed explanation of every file in this repository.
-
-### 1. Scrapers
-These scripts collect the raw text data. I needed a massive amount of data to train this from scratch, so I built custom scrapers for different platforms.
-
-*   **`ScrapeRedditData.py`**: This connects to the Reddit API (PRAW). It runs multiple threads (workers) to scrape posts and comments from specific Egyptian subreddits (like r/Egypt, r/Cairo). It uses a local SQLite database (`processed_posts.db`) to remember which posts it already scraped so it doesn't download duplicate data.
-*   **`ScrapeYoutubeSubtitles.py`**: A wrapper around `yt-dlp`. It takes a list of YouTube playlists, downloads the auto-generated or manual subtitles, and strips out all the timestamps and HTML tags to leave just the raw Egyptian Arabic text. It also calculates how many hours of audio I have processed.
-*   **`StreamTwitterData.py`**: There is a huge dataset called 'faisalq/ETC' on Hugging Face. Downloading it all takes too much space, so this script streams it row-by-row over the internet, filters the content, and saves it to a text file on the fly.
-*   **`DownloadHuggingFaceDatasets.py`**: This downloads massive English datasets (like C4 or FineWeb) but allows me to set a hard size limit (e.g., "Stop after 500MB"). It chunks the data into smaller text files so I don't crash my RAM loading terabytes of data.
-*   **`DownloadDatasetSubsets.py`**: Similar to the script above, but for specific datasets like rap lyrics or toxic conversations. This adds stylistic variety to the model so it understands slang and informal speech.
-
-### 2. Processors
-Raw data is messy. These scripts clean it, filter it, and turn it into high-quality training data.
-
-*   **`CleanHtmlEntities.py`**: Fixes web junk like `&nbsp;` or `&quot;`. It also splits bilingual lines. If a line looks like "1. Hello ||| اهلا", it splits them into two separate lists for processing.
-*   **`NormalizeSeparators.py`**: My data came from different sources. Some used `->` to separate languages, others used `-`. This script forces everything into one standard format: `ID. English ||| Arabic`.
-*   **`FilterTextNoise.py`**: The garbage collector. It looks at every sentence and deletes it if it has too many emojis, weird symbols, mostly numbers, or if it looks like spam (e.g., "hahahahaha").
-*   **`AlignAndFilterCorpus.py`**: This is a critical step. It calculates the length ratio between the English sentence and the Arabic sentence. If English is 3 words and Arabic is 50 words, it is a bad translation, so this script deletes it. It also moves extremely long sentences to a separate file so they don't mess up batching during training.
-*   **`DeepTextCleaning.py`**: The final polish. Removes specific subtitle artifacts like "(music playing)" or "(laughs)". It also limits duplicates; if a sentence appears 100 times, it keeps only 5 copies to prevent the model from memorizing simple phrases.
-*   **`CombineProcessedFiles.py`**: Takes all the cleaned text files, merges them into one giant file, removes exact duplicates, and sorts them alphabetically.
-*   **`SplitArrowToTxt.py`**: Converts Hugging Face `.arrow` files into standard `.txt` files so my other scripts can read them line-by-line.
-*   **`ApplyRuleBasedPretokenization.py`**: Runs before training. It applies linguistic rules, like splitting `w-` (and) or `al-` (the) from Arabic words so the tokenizer can learn them as separate concepts.
-
-### 3. Analytics
-I wrote these to analyze the health of the dataset before training.
-
-*   **`GenerateAdvancedCorpusStats.py`**: Generates a comprehensive report (HTML dashboard, JSON stats). It checks word frequency, sentence length distributions, and vocabulary size. It helps me see if I have too much English or too much Arabic.
-*   **`GenerateBasicCorpusStats.py`**: A faster version that just gives me the counts (unique pairs, duplicates, empty lines).
-
-### 4. Training (The Core)
-This is where the AI model is built. I did not use a pre-made model; I built the architecture from scratch.
-
-*   **`Step1_PretokenizeRawData.ipynb`**: Handles the logic for splitting Arabic prefixes and English contractions (like "don't" -> "do" "n't") before the BPE training starts.
-*   **`Step2_TrainBpeTokenizerFromScratch.ipynb`**: Trains a custom Byte-Pair Encoding (BPE) tokenizer. I set the vocabulary size to 90,000 to handle the mix of English, Standard Arabic, and Egyptian Slang. It adds the specific special tokens BART needs (`<s>`, `</s>`).
-*   **`Step3_PretrainBartModelFromScratch.ipynb`**:
-    *   **Architecture:** It initializes a BART-style Encoder-Decoder (8 layers, 384 hidden dim).
-    *   **RMSNorm Fix:** Standard BART uses `LayerNorm`, which causes training to crash (NaN loss) in FP16 mode. I wrote a script to manually replace every `LayerNorm` layer with `RMSNorm`, which is much more stable.
-    *   **Weighted Sampling:** I have different data sources (High Quality vs. Scraped). This script mixes them so the model sees 54% high-quality English and 24% high-quality Arabic, ensuring it learns good grammar while still learning slang.
-    *   **Manual Loop:** I wrote a custom training loop to save the exact state of the data loader. If training stops, I can resume exactly where I left off without restarting the dataset from row zero.
-*   **`Step4_FinetuneTranslationModel.ipynb`**:
-    *   Loads the pre-trained weights.
-    *   **The Embedding Fix:** When loading weights, PyTorch sometimes disconnects the input and output embeddings. This script manually ties `embed_tokens` to `lm_head` to ensure the model works correctly.
-    *   Fine-tunes specifically on Translation (English to Arabic) using the SacreBLEU metric.
-*   **`BpeTrainingLogic.py`**: Helper functions for the tokenizer training.
-
-### 5. Utilities
-Small tools for fixing file errors.
-
-*   **`ChunkTextFile.py`**: Splits huge book files into smaller chunks of 350 words.
-*   **`SplitFileIntoQuarters.py`**: Breaks a massive 10GB dataset file into 10 smaller files so I can open them.
-*   **`RenumberTextLines.py`** & **`FixAndRenumberLines.py`**: Sometimes lines get numbered wrong (1, 2, 5, 100). These scripts find the error and renumber the whole file correctly (1, 2, 3, 4...).
-*   **`DebugCorpusParsing.py`**: If a file isn't loading, this script reads it line-by-line and tells me exactly which line is broken.
-
----
-
-## Model Architecture Details
-
-I chose an **Encoder-Decoder** architecture because it is best for translation. The Encoder understands the English context, and the Decoder generates the Arabic response.
-
-*   **Base:** BART (Bidirectional and Auto-Regressive Transformers).
-*   **Modifications:**
-    *   **RMSNorm:** Replaced LayerNorm to fix gradient explosions.
-    *   **SwiGLU:** Used as the activation function for better convergence.
-    *   **Embeddings:** Tied input/output embeddings to reduce parameter count.
-*   **Training Strategy:**
-    1.  **Pre-training:** I taught the model both languages by masking random words and making it guess them (Masked Language Modeling).
-    2.  **Fine-tuning:** I taught it to translate by feeding it parallel English-Arabic pairs.
-
-## Installation
-
-1.  Clone this repository.
-2.  Install the requirements:
-
-```bash
-pip install transformers datasets tokenizers torch pandas numpy scikit-learn matplotlib seaborn praw yt-dlp evaluate sacrebleu safetensors accelerate bitsandbytes
-```
-
-Created by **Mostafa Shams**.
-```
+# Example Usage
+print(translate("I am really happy to see you."))
+# Output: "أنا مبسوط أوي إني شفتك"
+AuthorShams
