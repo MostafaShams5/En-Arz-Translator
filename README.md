@@ -197,7 +197,6 @@ print(translate("I am really happy because the model works."))
 Scripts responsible for collecting raw data from various platforms.
 *   **ScrapeRedditData.py:** Connects to the Reddit API using multi-threading to scrape posts and comments from targeted Egyptian subreddits. Uses SQLite for deduplication.
 *   **ScrapeYoutubeSubtitles.py:** A wrapper around yt-dlp that downloads and cleans subtitles from YouTube playlists, stripping timestamps and HTML to extract raw VTT text.
-*   **StreamTwitterData.py:** Streams massive datasets row-by-row to filter and save content without loading the entire file into memory.
 *   **DownloadHuggingFaceDatasets.py:** Downloads large English datasets (C4, FineWeb) with strict file size limits to prevent memory interactions.
 *   **DownloadDatasetSubsets.py:** Target specific domains (e.g., lyrics, toxic comments) to improve model stylistic coverage.
 
