@@ -1,6 +1,6 @@
 # English ↔ Egyptian Arabic Transformer
 
-This project develops a translation system specifically for the Egyptian dialect (Masri), built entirely from scratch. Rather than fine-tuning an existing model, it implements a custom Encoder-Decoder architecture with stability improvements—like replacing LayerNorm with RMSNorm—and a BPE tokenizer designed to handle irregular spelling and slang. The system produces a robust model that reaches a BLEU score of 28.5, showing that reliable translation is achievable even without huge standard datasets.
+This project develops a translation system for the Egyptian dialect (Masri), built entirely from scratch. Rather than fine-tuning an existing model, it implements a custom Encoder-Decoder architecture with stability improvements—like replacing LayerNorm with RMSNorm—and a BPE tokenizer designed to handle irregular spelling and slang. The system produces a robust model that reaches a BLEU score of 28.5, showing that reliable translation is achievable even without huge standard datasets.
 
 ## Data Collection
 
@@ -58,8 +58,8 @@ The model uses a custom Encoder-Decoder (BART configuration) built from scratch 
 
 ## Resources
 
-*   **Model Link:** [Hugging Face: Shams03/En-Arz](https://huggingface.co/Shams03/En-Arz)  
-*   **Live Demo:** [Hugging Face Spaces](https://huggingface.co/spaces/Shams03/EnglishToArz)
+*   **Model Link:** [Hugging Face: Shams03/En-Arz](https://huggingface.co/Shams03/EgyLated)  
+*   **Live Demo:** [Hugging Face Spaces](https://huggingface.co/spaces/Shams03/EgyLated)
 
 ## Key Engineering Challenges & Solutions
 
@@ -169,7 +169,7 @@ def fix_arabic(text):
     return text.strip()
 
 # 2. Run Inference
-REPO_NAME = "Shams03/En-Arz" 
+REPO_NAME = "Shams03/EgyLated" 
 model, tokenizer = load_patched_model(REPO_NAME)
 
 def translate(text):
